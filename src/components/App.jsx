@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -12,84 +12,64 @@ import { Modal } from './Modal/Modal';
 
 import { Container } from './App.styled';
 
-export class App extends Component {
-  state = {
-    searchValue: '',
-    page: 1,
-    per_page: 12,
-    images: [],
-    showModal: false,
-    largeImageURL: '',
-    isLoader: false,
-    isLoadMore: false,
-  };
+export const App = () => {
+  const [searchValue, setSearchValue] = useState('');
+  const [page, setPage] = useState(1);
+  const [images, setImages] = useState([]);
+  const [per_page, setPer_page] = useState(12);
+  const [isLoadMore, setIsLoadMore] = useState(false);
+  const [isLoader, setIsLoader] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [largeImageURL, setLargeImageURL] = useState('');
 
-  componentDidUpdate(prevProps, prevState) {
-    const { searchValue, page, per_page } = this.state;
-
-    if (prevState.searchValue !== searchValue || prevState.page !== page) {
-      this.setState({ isLoader: true });
-
-      this.fetchImages(searchValue, page, per_page);
+  useEffect(() => {
+    if (searchValue === '') {
+      return;
     }
-  }
 
-  fetchImages = (searchValue, page, per_page) => {
+    setIsLoader(true);
+
     Api.apiService(searchValue, page, per_page)
       .then(({ hits, totalHits }) => {
-        const { page, per_page } = this.state;
-
         if (hits.length === 0) {
-          this.setState({ isLoader: false });
-
           toast.error('Sorry, but nothing was found for your query. Try again');
+          setIsLoader(false);
           return;
         }
 
-        this.setState(prevState => ({
-          images: [...prevState.images, ...hits],
-          isLoadMore: page < Math.ceil(totalHits / per_page),
-        }));
-        this.setState({ isLoader: false });
+        setImages(prevState => [...prevState, ...hits]);
+        setIsLoadMore(page < Math.ceil(totalHits / per_page));
+        setIsLoader(false);
       })
       .catch(error => console.log(error));
+  }, [page, per_page, searchValue]);
+
+  const hendlrSubmitForm = searchValue => {
+    setSearchValue(searchValue);
+    setPage(1);
+    setImages([]);
   };
 
-  hendlrSubmitForm = searchValue => {
-    this.setState({ searchValue, page: 1, images: [] });
+  const toggleModal = largeImageURL => {
+    setShowModal(!showModal);
+    setLargeImageURL(largeImageURL);
   };
 
-  loadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const loadMore = () => {
+    setPage(prevState => prevState + 1);
   };
 
-  toggleModal = img => {
-    this.setState(prevState => ({
-      showModal: !prevState.showModal,
-      largeImageURL: img,
-    }));
-  };
+  return (
+    <Container>
+      <Searchbar onSubmit={hendlrSubmitForm} />
+      {images.langth !== 0 && (
+        <ImageGallery images={images} onClick={toggleModal} />
+      )}
+      {isLoadMore && <Button onClick={loadMore} />}
+      {isLoader && <Loader />}
 
-  render() {
-    const { images, showModal, largeImageURL, isLoader, isLoadMore } =
-      this.state;
-
-    return (
-      <Container>
-        <Searchbar onSubmit={this.hendlrSubmitForm} />
-        {images.langth !== 0 && (
-          <ImageGallery images={images} onClick={this.toggleModal} />
-        )}
-        {isLoadMore && <Button onClick={this.loadMore} />}
-        {isLoader && <Loader />}
-
-        {showModal && (
-          <Modal imgLarg={largeImageURL} onClose={this.toggleModal} />
-        )}
-        <ToastContainer autoClose={3000} />
-      </Container>
-    );
-  }
-}
+      {showModal && <Modal imgLarg={largeImageURL} onClose={toggleModal} />}
+      <ToastContainer autoClose={3000} />
+    </Container>
+  );
+};
