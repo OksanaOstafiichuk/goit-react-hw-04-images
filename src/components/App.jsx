@@ -16,7 +16,7 @@ export const App = () => {
   const [searchValue, setSearchValue] = useState('');
   const [page, setPage] = useState(1);
   const [images, setImages] = useState([]);
-  const [per_page, setPer_page] = useState(12);
+  const [per_page] = useState(12);
   const [isLoadMore, setIsLoadMore] = useState(false);
   const [isLoader, setIsLoader] = useState(false);
   const [showModal, setShowModal] = useState(false);
